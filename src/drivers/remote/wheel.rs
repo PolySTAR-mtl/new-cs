@@ -1,0 +1,1 @@
+pub type Wheel = i16;
