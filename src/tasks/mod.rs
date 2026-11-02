@@ -21,10 +21,17 @@ defmt::timestamp!("{=u32}", {
     ]
 )]
 mod app {
+    use stm32h7xx_hal::{
+        pac,
+        serial::Rx
+    };
+    use crate::drivers::remote::Remote;
+
     #[shared]
     struct Shared {
         // Shared state between tasks (if needed)
         // Add action states to decouple the input task from the main control loop
+        remote: Remote, // Remote driver
     }
 
     #[local]
@@ -32,22 +39,23 @@ mod app {
         // Task-local state
         // Example: wheel_motors: [MotorDriver; 4],
         // Example: timer: Timer<pac::TIM2>,
-        remote: u32, // Remote driver
         // Add subsystems states (data, speed, position, etc.)
         // Add powermanagement states (battery, power supply, etc.)
+        uart5_rx: Rx<pac::UART5>, // Remote uart rx buffer
     }
 
     #[init]
     fn init(cx: init::Context) -> (Shared, Local) {
-        let _ = super::init::task_init(cx);
+        let hardware = super::init::task_init(cx);
 
         defmt::println!("RTIC init reached");
 
         (
             Shared {
+                remote: hardware.remote
             }, 
             Local {
-                remote: 0,
+                uart5_rx: hardware.uart5_rx
             },
         )
     }
@@ -58,16 +66,26 @@ mod app {
     }
 
     #[task(
-        binds = UART4,
-        priority = 1,
+        binds = UART5,
+        priority = 2,
         shared = [
-
+            remote
         ],
         local = [
-            remote
+            uart5_rx
         ]
     )]
     fn input(mut cx: input::Context) {
         super::input::task_input(&mut cx);
+    }
+
+    #[task(
+        priority = 1,
+        shared = [
+            remote
+        ]
+    )]
+    async fn input_watchdog(mut cx: input_watchdog::Context) -> ! {
+        super::input::task_input_watchdog(&mut cx).await;
     }
 }
