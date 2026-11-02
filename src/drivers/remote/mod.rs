@@ -6,9 +6,6 @@ pub mod wheel;
 pub mod mouse;
 mod protocol;
 
-use super::timer::{
-    TimeMilliseconds,
-};
 use decoder::{Dr16Decoder, Value, create_dr16_decoder};
 use joystick::JoyStick;
 use keyboard::{
@@ -19,10 +16,12 @@ use switch::SwitchState;
 use wheel::Wheel;
 use mouse::Mouse;
 
+use crate::drivers::remote::protocol::ProtocolFieldIndex;
 
 const REMOTE_BUFFER_SIZE: usize = 18;
 
 type BufferData = u8;
+pub type TimeMilliseconds = u64;
 
 enum RemoteReadError {
     InvalidData,
@@ -43,8 +42,7 @@ pub struct Remote {
     decoder: Dr16Decoder,
 }
 
-impl Remote
-{
+impl Remote {
 
 pub fn new() -> Self {
     Remote {
@@ -229,12 +227,12 @@ fn parse_read_buffer(&mut self) -> Result<(), RemoteReadError> {
         }
     };
 
-    let right_x = get_centered(0)?;
-    let right_y = get_centered(1)?;
-    let left_x = get_centered(2)?;
-    let left_y = get_centered(3)?;
+    let right_x = get_centered(ProtocolFieldIndex::RightJoyStickX as usize)?;
+    let right_y = get_centered(ProtocolFieldIndex::RightJoyStickY as usize)?;
+    let left_x = get_centered(ProtocolFieldIndex::LeftJoyStickX as usize)?;
+    let left_y = get_centered(ProtocolFieldIndex::LeftJoyStickY as usize)?;
 
-    let wheel = get_centered(12)?;
+    let wheel = get_centered(ProtocolFieldIndex::Wheel as usize)?;
 
     // Extract switches.
     let get_switch = |index: usize| -> Result<SwitchState, RemoteReadError> {
@@ -249,8 +247,8 @@ fn parse_read_buffer(&mut self) -> Result<(), RemoteReadError> {
         }
     };
 
-    let right_switch = get_switch(4)?;
-    let left_switch = get_switch(5)?;
+    let right_switch = get_switch(ProtocolFieldIndex::RightSwitch as usize)?;
+    let left_switch = get_switch(ProtocolFieldIndex::LeftSwitch as usize)?;
 
     // Extract mouse information.
     let get_signed = |index: usize| -> Result<i16, RemoteReadError> {
@@ -262,9 +260,9 @@ fn parse_read_buffer(&mut self) -> Result<(), RemoteReadError> {
         }
     };
 
-    let mouse_x = get_signed(6)?;
-    let mouse_y = get_signed(7)?;
-    let mouse_z = get_signed(8)?;
+    let mouse_x = get_signed(ProtocolFieldIndex::MouseX as usize)?;
+    let mouse_y = get_signed(ProtocolFieldIndex::MouseY as usize)?;
+    let mouse_z = get_signed(ProtocolFieldIndex::MouseZ as usize)?;
 
     // Extract mouse buttons.
     let get_boolean = |index: usize| -> Result<bool, RemoteReadError> {
@@ -274,11 +272,11 @@ fn parse_read_buffer(&mut self) -> Result<(), RemoteReadError> {
         }
     };
 
-    let mouse_left = get_boolean(9)?;
-    let mouse_right = get_boolean(10)?;
+    let mouse_left = get_boolean(ProtocolFieldIndex::MouseLeftButton as usize)?;
+    let mouse_right = get_boolean(ProtocolFieldIndex::MouseRightButton as usize)?;
 
     // Extract keyboard bitmask.
-    let key_bits = match decoded[11].value {
+    let key_bits = match decoded[ProtocolFieldIndex::Keyboard as usize].value {
         Value::Bitmask(value) => {
             u16::try_from(value).map_err(|_| RemoteReadError::InvalidData)?
         }

@@ -37,7 +37,8 @@ const CENTER: i16 = 1024;
 
 pub const FRAME_SIZE: usize = 18; // bytes
 
-pub const PROTOCOL_FIELDS: [Field; 13] = [
+pub const PROTOCOL_FIELDS_COUNT: usize = 13;
+pub const PROTOCOL_FIELDS: [Field; PROTOCOL_FIELDS_COUNT] = [
     Field {
         name: "right_joystick_x",
         offset: 0,
@@ -117,6 +118,22 @@ pub const PROTOCOL_FIELDS: [Field; 13] = [
         encoding: Encoding::Centered(CENTER),
     },
 ];
+
+pub enum ProtocolFieldIndex {
+    RightJoyStickX = 0,
+    RightJoyStickY,
+    LeftJoyStickX,
+    LeftJoyStickY,
+    RightSwitch,
+    LeftSwitch,
+    MouseX,
+    MouseY,
+    MouseZ,
+    MouseLeftButton,
+    MouseRightButton,
+    Keyboard,
+    Wheel,
+}
 
 // const FRAME_BITS: usize = FRAME_SIZE * 8;
 

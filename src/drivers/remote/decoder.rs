@@ -1,4 +1,5 @@
 use super::protocol::{
+    PROTOCOL_FIELDS_COUNT,
     PROTOCOL_FIELDS,
     FRAME_SIZE,
     Encoding,
@@ -186,10 +187,10 @@ impl<const N: usize> Decoder<N> {
 }
 
 /// DJI DR16 decoder type.
-pub type Dr16Decoder = Decoder<13>;
+pub type Dr16Decoder = Decoder<PROTOCOL_FIELDS_COUNT>;
 
 /// Construct a DJI DR16 decoder.
 pub fn create_dr16_decoder() -> Dr16Decoder {
-    // Will crash if the decoder is invalid.
+    // Will panic if the decoder is invalid.
     Decoder::new(&PROTOCOL_FIELDS, FRAME_SIZE).expect("Invalid dr16 decoder")
 }
