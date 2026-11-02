@@ -4,5 +4,7 @@
 use defmt_rtt as _;
 use panic_probe as _;
 
-mod tasks;
+mod actions;
 mod config;
+mod drivers;
+mod tasks;
