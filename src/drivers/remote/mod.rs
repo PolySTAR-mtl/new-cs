@@ -75,7 +75,7 @@ pub fn read(&mut self, byte: u8, now: TimeMilliseconds) {
     // Parse the buffer if all 18 bytes have been received.
     if self.current_buffer_index >= REMOTE_BUFFER_SIZE {
         if self.parse_read_buffer().is_err() {
-            defmt::warn!("Failed to parse remote buffer");
+            defmt::println!("Failed to parse remote buffer");
             self.reset();
         } else {
             self.is_connected = true;
@@ -157,61 +157,13 @@ fn byte_to_switch_state(value: u32) -> SwitchState {
     match value {
         0 => SwitchState::Unknown,
         1 => SwitchState::Up,
-        2 => SwitchState::Down,
-        3 => SwitchState::Middle,
+        2 => SwitchState::Middle,
+        3 => SwitchState::Down,
         _ => SwitchState::Unknown,
     }
 }
 
 fn parse_read_buffer(&mut self) -> Result<(), RemoteReadError> {
-    // Placeholder implementation, replace with actual parsing logic
-    // this is a wonky encoding implemented by our "good pal Li Qingzhi" as stated by a chinese
-    // translated document our team acquired a while back; refer to this document for the protocol
-    // encoding: https://drive.google.com/file/d/1a5kaTsDvG89KQwy3fkLVkxKaQJfJCsnu/view?usp=sharing
-
-    // // remote joystick information
-    // remote.rightHorizontal = (rxBuffer[0] | rxBuffer[1] << 8) & 0x07FF;
-    // remote.rightHorizontal -= 1024;
-    // remote.rightVertical = (rxBuffer[1] >> 3 | rxBuffer[2] << 5) & 0x07FF;
-    // remote.rightVertical -= 1024;
-    // remote.leftHorizontal = (rxBuffer[2] >> 6 | rxBuffer[3] << 2 | rxBuffer[4] << 10) & 0x07FF;
-    // remote.leftHorizontal -= 1024;
-    // remote.leftVertical = (rxBuffer[4] >> 1 | rxBuffer[5] << 7) & 0x07FF;
-    // remote.leftVertical -= 1024;
-
-    // remote.leftSwitch = static_cast<Remote::SwitchState>((rxBuffer[5] >> 6) & 0x03);
-    // remote.rightSwitch = static_cast<Remote::SwitchState>((rxBuffer[5] >> 4) & 0x03);
-
-    // // mouse input
-    // remote.mouse.x = rxBuffer[6] | (rxBuffer[7] << 8);    // x axis
-    // remote.mouse.y = rxBuffer[8] | (rxBuffer[9] << 8);    // y axis
-    // remote.mouse.z = rxBuffer[10] | (rxBuffer[11] << 8);  // z axis
-    // remote.mouse.l = static_cast<bool>(rxBuffer[12]);     // left button click
-    // remote.mouse.r = static_cast<bool>(rxBuffer[13]);     // right button click
-
-    // // keyboard capture
-    // remote.key = rxBuffer[14] | rxBuffer[15] << 8;
-    // // remote wheel
-    // remote.wheel = (rxBuffer[16] | rxBuffer[17] << 8) - 1024;
-
-    // // the remote joystick and wheel values must be <= abs(660)
-    // if ((abs(remote.rightHorizontal) > ANALOG_MAX_VALUE) ||
-    //     (abs(remote.rightVertical) > ANALOG_MAX_VALUE) ||
-    //     (abs(remote.leftHorizontal) > ANALOG_MAX_VALUE) ||
-    //     (abs(remote.leftVertical) > ANALOG_MAX_VALUE) || (abs(remote.wheel) > ANALOG_MAX_VALUE))
-    // {
-    //     RAISE_ERROR(drivers, "invalid remote joystick values");
-    // }
-
-    // drivers->commandMapper.handleKeyStateChange(
-    //     remote.key,
-    //     remote.leftSwitch,
-    //     remote.rightSwitch,
-    //     remote.mouse.l,
-    //     remote.mouse.r);
-
-    // remote.updateCounter++;
-
     // Decode the 18-byte DBUS frame.
     let decoded = self.decoder
         .decode(&self.buffer)
@@ -299,20 +251,20 @@ fn parse_read_buffer(&mut self) -> Result<(), RemoteReadError> {
         y: right_y,
     };
 
-    defmt::info!("Right Joystick x:{}, y:{}", right_x, right_y);
+    defmt::println!("Right Joystick x:{}, y:{}", right_x, right_y);
 
     self.left_joystick = JoyStick {
         x: left_x,
         y: left_y,
     };
 
-    defmt::info!("Left Joystick x:{}, y:{}", left_x, left_y);
+    defmt::println!("Left Joystick x:{}, y:{}", left_x, left_y);
 
     self.right_switch = right_switch;
     self.left_switch = left_switch;
 
-    defmt::info!("Right switch: {}", right_switch as u32);
-    defmt::info!("Left switch: {}", left_switch as u32);
+    defmt::println!("Right switch: {}", right_switch as u32);
+    defmt::println!("Left switch: {}", left_switch as u32);
 
     self.mouse = Mouse {
         x: mouse_x,
@@ -322,7 +274,7 @@ fn parse_read_buffer(&mut self) -> Result<(), RemoteReadError> {
         right_button: mouse_right,
     };
 
-    defmt::info!("Mouse x: {}, y: {}, z: {}, left_button: {}, right_button: {}",
+    defmt::println!("Mouse x: {}, y: {}, z: {}, left_button: {}, right_button: {}",
         mouse_x,
         mouse_y,
         mouse_z,
@@ -332,11 +284,11 @@ fn parse_read_buffer(&mut self) -> Result<(), RemoteReadError> {
 
     self.key_bits = key_bits;
 
-    defmt::info!("Key bits: {}", key_bits);
+    defmt::println!("Key bits: {}", key_bits);
 
     self.wheel = wheel;
 
-    defmt::info!("Wheel: {}", wheel);
+    defmt::println!("Wheel: {}", wheel);
 
     Ok(())
 }

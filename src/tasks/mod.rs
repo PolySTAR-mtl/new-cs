@@ -21,11 +21,18 @@ defmt::timestamp!("{=u32}", {
     ]
 )]
 mod app {
-    use stm32h7xx_hal::{
+    use embedded_hal::serial::Read;
+use stm32h7xx_hal::{
         pac,
         serial::Rx
     };
     use crate::drivers::remote::Remote;
+    use super::Mono;
+
+    use rtic_monotonics::Monotonic;
+    use stm32h7xx_hal::nb::Error;
+
+    use crate::drivers::remote::TimeMilliseconds;
 
     #[shared]
     struct Shared {
@@ -47,8 +54,6 @@ mod app {
     #[init]
     fn init(cx: init::Context) -> (Shared, Local) {
         let hardware = super::init::task_init(cx);
-
-        defmt::println!("RTIC init reached");
 
         (
             Shared {
@@ -83,7 +88,7 @@ mod app {
         priority = 1,
         shared = [
             remote
-        ]
+        ],
     )]
     async fn input_watchdog(mut cx: input_watchdog::Context) -> ! {
         super::input::task_input_watchdog(&mut cx).await;

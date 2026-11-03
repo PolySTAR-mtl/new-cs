@@ -1,6 +1,6 @@
 use embedded_hal::serial::Read;
 use rtic::Mutex;
-use rtic_monotonics::Monotonic;
+use rtic_monotonics::{Monotonic, rtic_time::embedded_hal::delay::DelayNs};
 use stm32h7xx_hal::nb::Error;
 use rtic_monotonics::fugit::ExtU32;
 
@@ -17,7 +17,6 @@ use crate::drivers::remote::TimeMilliseconds;
 pub fn task_input(cx: &mut input::Context) {
     loop {
         let result = cx.local.uart5_rx.read();
-
         match result {
             Ok(byte) => {
                 cx.shared.remote.lock(|remote| {
@@ -39,7 +38,7 @@ pub async fn task_input_watchdog(cx: &mut input_watchdog::Context<'_>) -> ! {
         cx.shared.remote.lock(|remote| {
             remote.check_timeout(Mono::now().ticks() as u64);
             if !remote.is_connected() {
-                defmt::warn!("Controller was disconnected");
+                defmt::println!("Controller was disconnected");
             }
         });
     }
