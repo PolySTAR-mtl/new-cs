@@ -67,7 +67,7 @@ pub fn new() -> Self {
     }
 }
 
-pub fn read(&mut self, byte: u8, now: TimeMilliseconds) {
+pub fn read(&mut self, byte: u8, now: TimeMilliseconds) -> () {
     self.buffer[self.current_buffer_index] = byte;
     self.current_buffer_index += 1;
     self.last_read_time = now;
@@ -127,7 +127,7 @@ pub fn is_connected(&self) -> bool {
     self.is_connected
 }
 
-pub fn check_timeout(&mut self, now: TimeMilliseconds) {
+pub fn check_timeout(&mut self, now: TimeMilliseconds) -> () {
     const REMOTE_DISCONNECT_TIMEOUT: TimeMilliseconds = 1000; // 1 second timeout for remote disconnect
     if now - self.last_read_time > REMOTE_DISCONNECT_TIMEOUT {
         self.reset();

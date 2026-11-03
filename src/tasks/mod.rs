@@ -21,18 +21,11 @@ defmt::timestamp!("{=u32}", {
     ]
 )]
 mod app {
-    use embedded_hal::serial::Read;
-use stm32h7xx_hal::{
+    use stm32h7xx_hal::{
         pac,
         serial::Rx
     };
     use crate::drivers::remote::Remote;
-    use super::Mono;
-
-    use rtic_monotonics::Monotonic;
-    use stm32h7xx_hal::nb::Error;
-
-    use crate::drivers::remote::TimeMilliseconds;
 
     #[shared]
     struct Shared {
@@ -80,7 +73,7 @@ use stm32h7xx_hal::{
             uart5_rx
         ]
     )]
-    fn input(mut cx: input::Context) {
+    fn input(mut cx: input::Context) -> () {
         super::input::task_input(&mut cx);
     }
 

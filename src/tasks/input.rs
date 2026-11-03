@@ -1,6 +1,6 @@
 use embedded_hal::serial::Read;
 use rtic::Mutex;
-use rtic_monotonics::{Monotonic, rtic_time::embedded_hal::delay::DelayNs};
+use rtic_monotonics::{Monotonic};
 use stm32h7xx_hal::nb::Error;
 use rtic_monotonics::fugit::ExtU32;
 
@@ -14,7 +14,7 @@ use super::{
 
 use crate::drivers::remote::TimeMilliseconds;
 
-pub fn task_input(cx: &mut input::Context) {
+pub fn task_input(cx: &mut input::Context) -> () {
     loop {
         let result = cx.local.uart5_rx.read();
         match result {

@@ -1,8 +1,16 @@
 use stm32h7xx_hal::{
-    gpio::{NoPin, gpiob}, pac, prelude::*, serial::{Rx, config::Config},
+    pac,
+    prelude::*,
+    serial::{
+        Rx,
+        config::Config,
+    },
 };
 
-use crate::{drivers::remote::Remote, tasks::app::input_watchdog};
+use crate::{
+    drivers::remote::Remote,
+    tasks::app::input_watchdog,
+};
 
 use super::app::{
     init,
