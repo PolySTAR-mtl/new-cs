@@ -17,6 +17,7 @@ embedded-hal = {
 }
 
 fdcan = "0.2.1"
+libm = "0.2.16"
 panic-probe = {
     version = "1.0.0",
     features = [

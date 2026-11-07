@@ -8,7 +8,9 @@ use stm32h7xx_hal::{
 };
 
 use crate::{
+    config::action_bindings::BINDINGS,
     drivers::remote::Remote,
+    input::input_map::InputMap,
     tasks::app::input_watchdog,
 };
 
@@ -20,6 +22,11 @@ pub struct Hardware {
     pub system_clock_hz: u32,
     pub remote: Remote,
     pub uart5_rx: Rx<pac::UART5>,
+}
+
+pub struct Context {
+    pub hardware: Hardware,
+    pub input_map: InputMap
 }
 
 fn configure_hardware(device: pac::Peripherals) -> Hardware {
@@ -44,12 +51,15 @@ fn configure_hardware(device: pac::Peripherals) -> Hardware {
 
     defmt::println!("Clock configuration complete");
 
+    // let tx_pin = gpiod.pd5.into_alternate::<14>();
+    let gpiob = device.GPIOB.split(ccdr.peripheral.GPIOB);
+
     // Configure GPIO.
     let gpiod = device.GPIOD.split(ccdr.peripheral.GPIOD);
 
-    // let tx_pin = gpiod.pd5.into_alternate::<14>();
-    let gpiob = device.GPIOB.split(ccdr.peripheral.GPIOB);
-    let tx_pin = gpiob.pb6.into_alternate::<14>();
+    // On SPI2_SCK pin (unused but required for a valid uart5 config)
+    let tx_pin = gpiob.pb13.into_alternate(); 
+
     let rx_pin = gpiod.pd2.into_alternate();
 
     // Configure UART5.
@@ -79,12 +89,16 @@ fn configure_hardware(device: pac::Peripherals) -> Hardware {
     }
 }
 
-pub fn task_init(cx: init::Context) -> Hardware {
+pub fn task_init(cx: init::Context) -> Context{
     let hardware = configure_hardware(cx.device);
 
     super::Mono::start(cx.core.SYST, hardware.system_clock_hz);
 
-    input_watchdog::spawn().expect("Failed to spawn watchdog");
+    input_watchdog::spawn()
+        .expect("Failed to spawn watchdog");
 
-    hardware
+    Context {
+        hardware,
+        input_map: InputMap::new(BINDINGS)
+    }
 }

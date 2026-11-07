@@ -1,0 +1,1 @@
+pub const SYSTICK_FREQUENCY_HZ: u32 = 1_000;

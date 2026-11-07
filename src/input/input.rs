@@ -1,20 +1,113 @@
+#[derive(Clone, Copy, Debug)]
+pub enum Axis {
+    Wheel = 0,
+}
 
-use remote::{
-    Switch,
-    SwitchState,
-    JoyStick,
-    Wheel,
-    Mouse,
-    Key,
-    KeyState
-};
+impl Axis {
+    pub const COUNT: usize = Axis::Wheel as usize + 1;
 
+    pub const fn index(self) -> usize {
+        self as usize
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum DualAxis {
+    LeftStick,
+    RightStick,
+}
+
+impl DualAxis {
+    pub const COUNT: usize = DualAxis::RightStick as usize + 1;
+    pub const fn index(self) -> usize {
+        Axis::COUNT + self as usize
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum Key {
+    W = 0,
+    S,
+    A,
+    D,
+    SHIFT,
+    CTRL,
+    Q,
+    E,
+    R,
+    F,
+    G,
+    Z,
+    X,
+    C,
+    V,
+    B
+}
+
+impl Key {
+    pub const COUNT: usize = Key::B as usize + 1;
+
+    pub const fn index(self) -> usize {
+        self as usize
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum Button {
+    Key(Key),
+    MouseLeft,
+    MouseRight,
+}
+
+impl Button {
+    pub const COUNT: usize = Key::COUNT + 2;
+
+    pub const fn index(self) -> usize {
+        const OFFSET: usize = Axis::COUNT + DualAxis::COUNT;
+
+        OFFSET + match self {
+            Button::Key(key) => key.index(),
+            Button::MouseLeft => Key::COUNT,
+            Button::MouseRight => Key::COUNT + 1,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Switch {
+    Left,
+    Right
+}
+
+impl Switch {
+    pub const COUNT: usize = Switch::Right as usize + 1;
+
+    pub const fn index(self) -> usize {
+        const OFFSET: usize = Axis::COUNT + DualAxis::COUNT + Button::COUNT;
+        self as usize + OFFSET
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
 pub enum Input {
-    LeftSwitch,
-    RightSwitch,
-    LeftJoyStick,
-    RightJoyStick,
-    Wheel,
-    Mouse,
-    Key(Key)
+    Axis(Axis),
+    DualAxis(DualAxis),
+    Button(Button),
+    Switch(Switch),
+}
+
+impl Input {
+    pub const COUNT: usize = Axis::COUNT
+                            + DualAxis::COUNT
+                            + Button::COUNT
+                            + Switch::COUNT;
+
+    pub const fn index(self) -> usize {
+        match self {
+            Input::Axis(axis) => axis.index(),
+            Input::DualAxis(axis) => axis.index(),
+            Input::Button(button) => button.index(),
+            Input::Switch(switch) => switch.index(),
+        }
+    }
 }

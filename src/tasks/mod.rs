@@ -1,11 +1,12 @@
 use rtic::app;
 use rtic_monotonics::systick::prelude::*;
 
+use crate::config::clocks::SYSTICK_FREQUENCY_HZ;
+
+mod control;
 mod init;
 mod input;
 mod idle;
-
-const SYSTICK_FREQUENCY_HZ: u32 = 1_000;
 systick_monotonic!(Mono, SYSTICK_FREQUENCY_HZ);
 
 defmt::timestamp!("{=u32}", {
@@ -25,7 +26,10 @@ mod app {
         pac,
         serial::Rx
     };
-    use crate::drivers::remote::Remote;
+    use crate::{
+        drivers::remote::Remote,
+        input::input_map::InputMap,
+    };
 
     #[shared]
     struct Shared {
@@ -42,18 +46,20 @@ mod app {
         // Add subsystems states (data, speed, position, etc.)
         // Add powermanagement states (battery, power supply, etc.)
         uart5_rx: Rx<pac::UART5>, // Remote uart rx buffer
+        input_map: InputMap
     }
 
     #[init]
     fn init(cx: init::Context) -> (Shared, Local) {
-        let hardware = super::init::task_init(cx);
+        let context = super::init::task_init(cx);
 
         (
             Shared {
-                remote: hardware.remote
+                remote: context.hardware.remote
             }, 
             Local {
-                uart5_rx: hardware.uart5_rx
+                uart5_rx: context.hardware.uart5_rx,
+                input_map: context.input_map
             },
         )
     }
@@ -85,5 +91,18 @@ mod app {
     )]
     async fn input_watchdog(mut cx: input_watchdog::Context) -> ! {
         super::input::task_input_watchdog(&mut cx).await;
+    }
+
+    #[task(
+        priority = 1,
+        shared = [
+            remote
+        ],
+        local = [
+            input_map
+        ]
+    )]
+    async fn control(mut cx: control::Context) -> ! {
+        super::control::task_control(&mut cx).await;
     }
 }

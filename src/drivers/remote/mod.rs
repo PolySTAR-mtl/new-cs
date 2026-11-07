@@ -1,44 +1,48 @@
 mod decoder;
-pub mod joystick;
-pub mod keyboard;
-pub mod switch;
-pub mod wheel;
 pub mod mouse;
 mod protocol;
 
-use decoder::{Dr16Decoder, Value, create_dr16_decoder};
-use joystick::JoyStick;
-use keyboard::{
-    Key,
-    KeyState,
+use crate::{
+    config::time::{
+        Duration,
+        Instant,
+    }, 
+    drivers::remote::protocol::ProtocolFieldIndex,
+    input::{
+        axis_value::AxisValue,
+        input::Key,
+        switch_position::SwitchPosition,
+    },
+    math::vector2::Vector2,
 };
-use switch::SwitchState;
-use wheel::Wheel;
+
+use decoder::{Dr16Decoder, Value, create_dr16_decoder};
 use mouse::Mouse;
 
-use crate::drivers::remote::protocol::ProtocolFieldIndex;
-
 const REMOTE_BUFFER_SIZE: usize = 18;
+const ANALOG_MAX_VALUE: u16 = 660;
 
 type BufferData = u8;
-pub type TimeMilliseconds = u64;
+type Joystick = Vector2<AxisValue>;
+type Wheel = AxisValue;
+
 
 enum RemoteReadError {
     InvalidData,
 }
 
 pub struct Remote {
-    left_joystick: JoyStick,
-    right_joystick: JoyStick,
+    left_joystick: Joystick,
+    right_joystick: Joystick,
     wheel: Wheel,
-    left_switch: SwitchState,
-    right_switch: SwitchState,
+    left_switch: Option<SwitchPosition>,
+    right_switch: Option<SwitchPosition>,
     mouse: Mouse,
     key_bits: u16,
     is_connected: bool,
     current_buffer_index: usize,
     buffer: [BufferData; REMOTE_BUFFER_SIZE],
-    last_read_time: TimeMilliseconds,
+    last_read_time: Instant,
     decoder: Dr16Decoder,
 }
 
@@ -46,11 +50,11 @@ impl Remote {
 
 pub fn new() -> Self {
     Remote {
-        left_joystick: JoyStick { x: 0, y: 0 },
-        right_joystick: JoyStick { x: 0, y: 0 },
-        wheel: 0,
-        left_switch: SwitchState::Unknown,
-        right_switch: SwitchState::Unknown,
+        left_joystick: Joystick::new(AxisValue::ZERO, AxisValue::ZERO),
+        right_joystick: Joystick::new(AxisValue::ZERO, AxisValue::ZERO),
+        wheel: AxisValue::ZERO,
+        left_switch: None,
+        right_switch: None,
         mouse: Mouse {
             x: 0,
             y: 0,
@@ -62,12 +66,21 @@ pub fn new() -> Self {
         current_buffer_index: 0,
         buffer: [0; REMOTE_BUFFER_SIZE],
         is_connected: false,
-        last_read_time: 0,
+        last_read_time: Instant::from_ticks(0),
         decoder: create_dr16_decoder()
     }
 }
 
-pub fn read(&mut self, byte: u8, now: TimeMilliseconds) -> () {
+pub fn read(&mut self, byte: u8, now: Instant) -> () {
+    const INTER_BYTE_GAP: Duration = Duration::from_ticks(200);
+    let gap_detected = now
+        .checked_duration_since(self.last_read_time)
+        .map_or(false, |gap| gap >= INTER_BYTE_GAP);
+
+    if gap_detected {
+        self.clear_rx_buffer();
+    }
+
     self.buffer[self.current_buffer_index] = byte;
     self.current_buffer_index += 1;
     self.last_read_time = now;
@@ -84,20 +97,20 @@ pub fn read(&mut self, byte: u8, now: TimeMilliseconds) -> () {
     }
 }
 
-pub fn get_left_switch(&self) -> SwitchState {
+pub fn get_left_switch(&self) -> Option<SwitchPosition> {
     self.left_switch
 }
 
-pub fn get_right_switch(&self) -> SwitchState {
+pub fn get_right_switch(&self) -> Option<SwitchPosition> {
     self.right_switch
 }
 
 
-pub fn get_left_joystick(&self) -> JoyStick {
+pub fn get_left_joystick(&self) -> Joystick {
     self.left_joystick
 }
 
-pub fn get_right_joystick(&self) -> JoyStick {
+pub fn get_right_joystick(&self) -> Joystick {
     self.right_joystick
 }
 
@@ -109,17 +122,17 @@ pub fn get_mouse(&self) -> Mouse {
     self.mouse
 }
 
-pub fn get_key_state(&self, key: Key) -> KeyState {
+pub fn is_key_pressed(&self, key: Key) -> Option<bool> {
     if !self.is_connected {
-        return KeyState::Unknown;
+        return None;
     }
     let key_index = key as u8;
     let mask = 1u16 << key_index;
 
     if self.key_bits & mask != 0 {
-        KeyState::Pressed
+        Some(true)
     } else {
-        KeyState::Released
+        Some(false)
     }
 }
 
@@ -127,19 +140,22 @@ pub fn is_connected(&self) -> bool {
     self.is_connected
 }
 
-pub fn check_timeout(&mut self, now: TimeMilliseconds) -> () {
-    const REMOTE_DISCONNECT_TIMEOUT: TimeMilliseconds = 1000; // 1 second timeout for remote disconnect
-    if now - self.last_read_time > REMOTE_DISCONNECT_TIMEOUT {
+pub fn check_timeout(&mut self, now: Instant) -> () {
+    const REMOTE_DISCONNECT_TIMEOUT: Duration = Duration::from_ticks(1000);
+    let stale = now
+        .checked_duration_since(self.last_read_time)
+        .map_or(false, |elapsed| elapsed > REMOTE_DISCONNECT_TIMEOUT);
+    if stale {
         self.reset();
     }
 }
 
 fn reset(&mut self) {
-    self.left_joystick = JoyStick { x: 0, y: 0 };
-    self.right_joystick = JoyStick { x: 0, y: 0 };
-    self.wheel = 0;
-    self.left_switch = SwitchState::Unknown;
-    self.right_switch = SwitchState::Unknown;
+    self.left_joystick = Joystick::new(AxisValue::ZERO, AxisValue::ZERO);
+    self.right_joystick = Joystick::new(AxisValue::ZERO, AxisValue::ZERO);
+    self.wheel = AxisValue::ZERO;
+    self.left_switch = None;
+    self.right_switch = None;
     self.mouse = Mouse::default();
     self.key_bits = 0;
 
@@ -153,13 +169,13 @@ fn clear_rx_buffer(&mut self) {
     self.buffer = [0; REMOTE_BUFFER_SIZE];
 }
 
-fn byte_to_switch_state(value: u32) -> SwitchState {
+fn byte_to_switch_state(value: u32) -> Option<SwitchPosition> {
     match value {
-        0 => SwitchState::Unknown,
-        1 => SwitchState::Up,
-        2 => SwitchState::Middle,
-        3 => SwitchState::Down,
-        _ => SwitchState::Unknown,
+        0 => None,
+        1 => Some(SwitchPosition::Up),
+        2 => Some(SwitchPosition::Middle),
+        3 => Some(SwitchPosition::Down),
+        _ => None,
     }
 }
 
@@ -187,7 +203,7 @@ fn parse_read_buffer(&mut self) -> Result<(), RemoteReadError> {
     let wheel = get_centered(ProtocolFieldIndex::Wheel as usize)?;
 
     // Extract switches.
-    let get_switch = |index: usize| -> Result<SwitchState, RemoteReadError> {
+    let get_switch = |index: usize| -> Result<Option<SwitchPosition>, RemoteReadError> {
         match decoded[index].value {
             Value::Unsigned(value) => {
                 let value = u32::try_from(value)
@@ -246,25 +262,36 @@ fn parse_read_buffer(&mut self) -> Result<(), RemoteReadError> {
     }
 
     // Commit parsed values.
-    self.right_joystick = JoyStick {
-        x: right_x,
-        y: right_y,
-    };
+    self.right_joystick = Joystick::new(
+        AxisValue::new(right_x as f32 / ANALOG_MAX_VALUE as f32),
+        AxisValue::new(right_y as f32 / ANALOG_MAX_VALUE as f32),
+    );
 
     defmt::println!("Right Joystick x:{}, y:{}", right_x, right_y);
 
-    self.left_joystick = JoyStick {
-        x: left_x,
-        y: left_y,
-    };
+    self.left_joystick = Joystick::new(
+        AxisValue::new(left_x as f32 / ANALOG_MAX_VALUE as f32),
+        AxisValue::new(left_y as f32 / ANALOG_MAX_VALUE as f32),
+    );
 
     defmt::println!("Left Joystick x:{}, y:{}", left_x, left_y);
 
     self.right_switch = right_switch;
     self.left_switch = left_switch;
 
-    defmt::println!("Right switch: {}", right_switch as u32);
-    defmt::println!("Left switch: {}", left_switch as u32);
+    let switch_to_u32 = |state: Option<SwitchPosition>| -> u32 {
+        if let Some(state) = state {
+            return match state {
+                SwitchPosition::Up => 1,
+                SwitchPosition::Middle => 2,
+                SwitchPosition::Down => 3,
+            };
+        }
+        0
+    };
+
+    defmt::println!("Right switch: {}", switch_to_u32(right_switch));
+    defmt::println!("Left switch: {}", switch_to_u32(left_switch));
 
     self.mouse = Mouse {
         x: mouse_x,
@@ -286,7 +313,7 @@ fn parse_read_buffer(&mut self) -> Result<(), RemoteReadError> {
 
     defmt::println!("Key bits: {}", key_bits);
 
-    self.wheel = wheel;
+    self.wheel = AxisValue::new(wheel as f32 / ANALOG_MAX_VALUE as f32);
 
     defmt::println!("Wheel: {}", wheel);
 
@@ -296,6 +323,5 @@ fn parse_read_buffer(&mut self) -> Result<(), RemoteReadError> {
 }
 
 fn validate_analog(value: i16) -> bool {
-    const ANALOG_MAX_VALUE: u16 = 660;
     value.unsigned_abs() <= ANALOG_MAX_VALUE
 }
