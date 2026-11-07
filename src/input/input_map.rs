@@ -184,7 +184,8 @@ impl InputMap {
                         },
                         _ => ActionValue::Axis(current),
                     }
-                }
+                },
+
                 (
                     ActionValue::DualAxis(current),
                     Trigger::DualAxis(dual_axis)
@@ -199,7 +200,8 @@ impl InputMap {
                         },
                         _ => ActionValue::DualAxis(current),
                     }
-                }
+                },
+
                 (
                     ActionValue::DualAxis(current),
                     Trigger::DirectionPressed{button, direction}
@@ -218,7 +220,7 @@ impl InputMap {
                     } else {
                         ActionValue::DualAxis(current)
                     }
-                }
+                },
 
                 // Mismatched value types
                 (
@@ -226,8 +228,8 @@ impl InputMap {
                     _ // Any Trigger
                 ) => {
                     current
-                }
-            }
+                },
+            };
         }
 
         for value in &mut values {

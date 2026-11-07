@@ -1,3 +1,4 @@
+// TODO: Convert output in remote to standard axis and button input values.
 #[derive(Clone, Copy, Default)]
 pub struct Mouse {
     pub x: i16,

@@ -4,7 +4,7 @@ pub enum Axis {
 }
 
 impl Axis {
-    pub const COUNT: usize = Axis::Wheel as usize + 1;
+    pub const COUNT: usize = Self::Wheel as usize + 1;
 
     pub const fn index(self) -> usize {
         self as usize
@@ -18,7 +18,7 @@ pub enum DualAxis {
 }
 
 impl DualAxis {
-    pub const COUNT: usize = DualAxis::RightStick as usize + 1;
+    pub const COUNT: usize = Self::RightStick as usize + 1;
     pub const fn index(self) -> usize {
         Axis::COUNT + self as usize
     }
@@ -66,9 +66,9 @@ impl Button {
         const OFFSET: usize = Axis::COUNT + DualAxis::COUNT;
 
         OFFSET + match self {
-            Button::Key(key) => key.index(),
-            Button::MouseLeft => Key::COUNT,
-            Button::MouseRight => Key::COUNT + 1,
+            Self::Key(key) => key.index(),
+            Self::MouseLeft => Key::COUNT,
+            Self::MouseRight => Key::COUNT + 1,
         }
     }
 }
@@ -80,7 +80,7 @@ pub enum Switch {
 }
 
 impl Switch {
-    pub const COUNT: usize = Switch::Right as usize + 1;
+    pub const COUNT: usize = Self::Right as usize + 1;
 
     pub const fn index(self) -> usize {
         const OFFSET: usize = Axis::COUNT + DualAxis::COUNT + Button::COUNT;
@@ -104,10 +104,10 @@ impl Input {
 
     pub const fn index(self) -> usize {
         match self {
-            Input::Axis(axis) => axis.index(),
-            Input::DualAxis(axis) => axis.index(),
-            Input::Button(button) => button.index(),
-            Input::Switch(switch) => switch.index(),
+            Self::Axis(axis) => axis.index(),
+            Self::DualAxis(axis) => axis.index(),
+            Self::Button(button) => button.index(),
+            Self::Switch(switch) => switch.index(),
         }
     }
 }

@@ -25,7 +25,7 @@ impl ActionValue {
                 *value = value.clamp(-1.0, 1.0);
             },
 
-            ActionValue::DualAxis(value) => {
+            Self::DualAxis(value) => {
                 *value = value.normalize()
             },
             _ => {},
