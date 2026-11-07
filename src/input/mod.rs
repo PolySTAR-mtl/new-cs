@@ -8,4 +8,5 @@ pub mod input_value;
 pub mod input_state;
 pub mod input;
 pub mod switch_position;
+pub mod trigger_data_output;
 pub mod trigger;

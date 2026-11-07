@@ -21,9 +21,10 @@ use super::{
     },
     action::Action,
     binding::Binding,
-    trigger::{
+    trigger::Trigger,
+    trigger_data_output::{
         Direction,
-        Trigger,
+        TriggerDataOutput,
     }
 };
 
@@ -162,17 +163,19 @@ impl InputMap {
                 continue;
             }
 
-            values[index] = match (values[index], binding.trigger) {
+            values[index] = match (values[index], binding.trigger, binding.trigger_data_output) {
                 (
                     ActionValue::Boolean(current),
-                    _ // Any Trigger
+                    _, // Any Trigger
+                    TriggerDataOutput::Default,
                 ) => {
                     ActionValue::Boolean(current || true )
                 },
 
                 (
                     ActionValue::Axis(current),
-                    Trigger::Axis(axis)
+                    Trigger::Axis(axis),
+                    TriggerDataOutput::Default
                 ) => {
                     let source = self.inputs[
                         Input::Axis(axis).index()
@@ -188,7 +191,8 @@ impl InputMap {
 
                 (
                     ActionValue::DualAxis(current),
-                    Trigger::DualAxis(dual_axis)
+                    Trigger::DualAxis(dual_axis),
+                    TriggerDataOutput::Default
                 ) => {
                     let source = self.inputs[
                         Input::DualAxis(dual_axis).index()
@@ -204,7 +208,8 @@ impl InputMap {
 
                 (
                     ActionValue::DualAxis(current),
-                    Trigger::DirectionPressed{button, direction}
+                    Trigger::Pressed(button),
+                    TriggerDataOutput::Direction(direction)
                 ) => {
                     let is_pressed = self.inputs[
                         Input::Button(button).index()
@@ -225,7 +230,8 @@ impl InputMap {
                 // Mismatched value types
                 (
                     current,
-                    _ // Any Trigger
+                    _, // Any Trigger
+                    _,
                 ) => {
                     current
                 },

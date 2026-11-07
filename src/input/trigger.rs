@@ -19,25 +19,12 @@ use super::{
 
 
 #[derive(Clone, Copy, Debug)]
-pub enum Direction {
-    Up,
-    Down,
-    Left,
-    Right,
-}
-
-
-#[derive(Clone, Copy, Debug)]
 pub enum Trigger {
     Pressed(Button),
     Released(Button),
     Held(Button),
     JustPressed(Button),
     JustReleased(Button),
-    DirectionPressed {
-        button: Button,
-        direction: Direction
-    },
     SwitchAt{
         switch: Switch,
         position: SwitchPosition,
@@ -78,15 +65,6 @@ impl Trigger {
             Trigger::JustReleased(button) => {
                 let index = Input::Button(button).index();
                 inputs[index].is_just_released()
-            },
-
-            Trigger::DirectionPressed {
-                button,
-                direction
-            } => {
-                let _ = direction;
-                let index = Input::Button(button).index();
-                inputs[index].is_pressed()
             },
 
             Trigger::SwitchAt {
