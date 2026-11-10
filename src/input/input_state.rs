@@ -1,10 +1,11 @@
-use super::input_value::InputValue;
 use crate::{
     config::time::{
         Duration,
         Instant,
-    }, input::switch_position::SwitchPosition, 
+    }, 
 };
+
+use super::input_value::InputValue;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct InputState {
