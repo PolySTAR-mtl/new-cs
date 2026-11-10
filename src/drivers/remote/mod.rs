@@ -1,23 +1,30 @@
-mod decoder;
 pub mod mouse;
-mod protocol;
+mod dr16_protocol;
+mod dr16_fields;
 
 use crate::{
     config::time::{
         Duration,
         Instant,
     }, 
-    drivers::remote::protocol::ProtocolFieldIndex,
     input::{
         axis_value::AxisValue,
         input::Key,
         switch_position::SwitchPosition,
     },
     math::vector2::Vector2,
+    drivers::{
+        protocols::{
+            decoder::Value,
+            protocol_codec::DecoderProtocol,
+        },
+        remote::dr16_fields::ProtocolFieldIndex,
+    }
 };
 
-use decoder::{Dr16Decoder, Value, create_dr16_decoder};
 use mouse::Mouse;
+use dr16_protocol::Dr16Protocol;
+
 
 const REMOTE_BUFFER_SIZE: usize = 18;
 const ANALOG_MAX_VALUE: u16 = 660;
@@ -43,7 +50,7 @@ pub struct Remote {
     current_buffer_index: usize,
     buffer: [BufferData; REMOTE_BUFFER_SIZE],
     last_read_time: Instant,
-    decoder: Dr16Decoder,
+    protocol: Dr16Protocol,
 }
 
 impl Remote {
@@ -67,7 +74,7 @@ pub fn new() -> Self {
         buffer: [0; REMOTE_BUFFER_SIZE],
         is_connected: false,
         last_read_time: Instant::from_ticks(0),
-        decoder: create_dr16_decoder()
+        protocol: Dr16Protocol::new().expect("Échec de l'initialisation du protocole DR16")
     }
 }
 
@@ -181,7 +188,7 @@ fn byte_to_switch_state(value: u32) -> Option<SwitchPosition> {
 
 fn parse_read_buffer(&mut self) -> Result<(), RemoteReadError> {
     // Decode the 18-byte DBUS frame.
-    let decoded = self.decoder
+    let decoded = self.protocol
         .decode(&self.buffer)
         .map_err(|_| RemoteReadError::InvalidData)?;
 

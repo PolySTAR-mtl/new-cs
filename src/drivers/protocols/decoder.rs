@@ -1,9 +1,10 @@
-use super::protocol::{
-    PROTOCOL_FIELDS_COUNT,
-    PROTOCOL_FIELDS,
-    FRAME_SIZE,
-    Encoding,
-    Field,
+use crate::{
+    drivers::protocols::{
+        field::{
+            Field,
+            Encoding
+        }
+    }
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -44,19 +45,19 @@ pub enum DecodeError {
     },
 }
 
-pub struct Decoder<const N: usize> {
-    fields: &'static [Field; N],
-    frame_size: usize, // in bytes
+/* A decoder class to interpret a frame from any type of peripheral
+Decode N_FIELDS fields, for a frame whose FRAME_SIZE is in bytes
+ */
+pub struct Decoder<const N_FIELDS: usize, const FRAME_SIZE: usize> {
+    fields: &'static [Field; N_FIELDS],
 }
 
-impl<const N: usize> Decoder<N> {
+impl<const N_FIELDS: usize, const FRAME_SIZE: usize> Decoder<N_FIELDS, FRAME_SIZE> {
     pub fn new(
-        fields: &'static [Field; N],
-        frame_size: usize,
+        fields: &'static [Field; N_FIELDS],
     ) -> Result<Self, DecodeError> {
         let decoder = Self {
             fields,
-            frame_size,
         };
 
         decoder.validate()?;
@@ -65,12 +66,12 @@ impl<const N: usize> Decoder<N> {
     }
 
     /// Validate protocol field definitions.
-    pub fn validate(&self) -> Result<(), DecodeError> {
-        let frame_bits = self.frame_size
+    fn validate(&self) -> Result<(), DecodeError> {
+        let frame_bits = FRAME_SIZE
             .checked_mul(8)
-            .filter(|_| self.frame_size > 0)
+            .filter(|_| FRAME_SIZE > 0)
             .ok_or(DecodeError::InvalidFrameSize {
-                size: self.frame_size,
+                size: FRAME_SIZE,
             })?;
 
         for field in self.fields {
@@ -112,10 +113,10 @@ impl<const N: usize> Decoder<N> {
     pub fn decode(
         &self,
         frame: &[u8],
-    ) -> Result<[DecodedField; N], DecodeError> {
-        if frame.len() != self.frame_size {
+    ) -> Result<[DecodedField; N_FIELDS], DecodeError> {
+        if frame.len() != FRAME_SIZE {
             return Err(DecodeError::InvalidFrameLength {
-                expected: self.frame_size,
+                expected: FRAME_SIZE,
                 actual: frame.len(),
             });
         }
@@ -186,11 +187,3 @@ impl<const N: usize> Decoder<N> {
     }
 }
 
-/// DJI DR16 decoder type.
-pub type Dr16Decoder = Decoder<PROTOCOL_FIELDS_COUNT>;
-
-/// Construct a DJI DR16 decoder.
-pub fn create_dr16_decoder() -> Dr16Decoder {
-    // Will panic if the decoder is invalid.
-    Decoder::new(&PROTOCOL_FIELDS, FRAME_SIZE).expect("Invalid dr16 decoder")
-}
