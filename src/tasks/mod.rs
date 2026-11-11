@@ -36,6 +36,7 @@ mod app {
         // Shared state between tasks (if needed)
         // Add action states to decouple the input task from the main control loop
         remote: Remote, // Remote driver
+        input_map: InputMap
     }
 
     #[local]
@@ -46,7 +47,6 @@ mod app {
         // Add subsystems states (data, speed, position, etc.)
         // Add powermanagement states (battery, power supply, etc.)
         uart5_rx: Rx<pac::UART5>, // Remote uart rx buffer
-        input_map: InputMap
     }
 
     #[init]
@@ -55,11 +55,11 @@ mod app {
 
         (
             Shared {
-                remote: context.hardware.remote
+                remote: context.hardware.remote,
+                input_map: context.input_map
             }, 
             Local {
                 uart5_rx: context.hardware.uart5_rx,
-                input_map: context.input_map
             },
         )
     }
@@ -72,15 +72,23 @@ mod app {
     #[task(
         binds = UART5,
         priority = 2,
+    )]
+    fn interrupt_uart5(cx: interrupt_uart5::Context) -> () {
+        super::input::task_uart5_interrupt(cx);
+    }
+
+    #[task(
+        priority = 2,
         shared = [
-            remote
+            remote,
+            input_map
         ],
         local = [
-            uart5_rx
+            uart5_rx,
         ]
     )]
-    fn input(mut cx: input::Context) -> () {
-        super::input::task_input(&mut cx);
+    async fn handle_remote(mut cx: handle_remote::Context) -> () {
+        super::input::task_handle_remote(&mut cx).await;
     }
 
     #[task(
@@ -96,11 +104,9 @@ mod app {
     #[task(
         priority = 1,
         shared = [
-            remote
-        ],
-        local = [
+            remote,
             input_map
-        ]
+        ],
     )]
     async fn control(mut cx: control::Context) -> ! {
         super::control::task_control(&mut cx).await;

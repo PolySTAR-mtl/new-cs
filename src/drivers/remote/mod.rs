@@ -71,7 +71,7 @@ pub fn new() -> Self {
     }
 }
 
-pub fn read(&mut self, byte: u8, now: Instant) -> () {
+pub fn read(&mut self, byte: u8, now: Instant) -> bool {
     const INTER_BYTE_GAP: Duration = Duration::from_ticks(200);
     let gap_detected = now
         .checked_duration_since(self.last_read_time)
@@ -92,9 +92,12 @@ pub fn read(&mut self, byte: u8, now: Instant) -> () {
             self.reset();
         } else {
             self.is_connected = true;
+            return true;
         }
         self.clear_rx_buffer();
     }
+    
+    false
 }
 
 pub fn get_left_switch(&self) -> Option<SwitchPosition> {

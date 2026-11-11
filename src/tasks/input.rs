@@ -6,23 +6,42 @@ use rtic_monotonics::fugit::ExtU32;
 
 use super::{
     app::{
-        input,
         input_watchdog,
+        handle_remote,
+        interrupt_uart5
     },
     Mono,
 };
 
-pub fn task_input(cx: &mut input::Context) -> () {
+pub fn task_uart5_interrupt(_cx: interrupt_uart5::Context) -> () {
+    match handle_remote::spawn() {
+        Ok(_) => {
+            defmt::info!("handle_remote spawned.")
+        },
+        Err(_e) => {
+            defmt::warn!("handle_remote failed to spawn.");
+        }
+    }
+}
+
+pub async fn task_handle_remote(cx: &mut handle_remote::Context<'_>) -> () {
     loop {
         let result = cx.local.uart5_rx.read();
         match result {
             Ok(byte) => {
                 cx.shared.remote.lock(|remote| {
-                    let time = Mono::now();
-                    remote.read(byte, time);
+                    let now = Mono::now();
+                    let is_frame_full = remote.read(byte, now);
+                    if is_frame_full {
+                        cx.shared.input_map.lock(|input_map| {
+                            input_map.update(remote, now);
+                        });
+                    }
                 });
             },
+
             Err(Error::WouldBlock) => break,
+            
             Err(Error::Other(_error)) => {
                 defmt::warn!("UART receive error");
                 break;
