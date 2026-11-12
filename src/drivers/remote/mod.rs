@@ -16,7 +16,7 @@ use crate::{
     math::vector2::Vector2,
 };
 
-use decoder::{Dr16Decoder, Value, create_dr16_decoder};
+use decoder::{Dr16Decoder, DR16_PROTOCOL, Value, create_dr16_decoder};
 use mouse::Mouse;
 
 const REMOTE_BUFFER_SIZE: usize = 18;
@@ -27,7 +27,7 @@ type Joystick = Vector2<AxisValue>;
 type Wheel = AxisValue;
 
 
-enum RemoteReadError {
+pub enum RemoteReadError {
     InvalidData,
 }
 
@@ -85,19 +85,24 @@ pub fn read(&mut self, byte: u8, now: Instant) -> bool {
     self.current_buffer_index += 1;
     self.last_read_time = now;
 
-    // Parse the buffer if all 18 bytes have been received.
-    if self.current_buffer_index >= REMOTE_BUFFER_SIZE {
-        if self.parse_read_buffer().is_err() {
-            defmt::println!("Failed to parse remote buffer");
-            self.reset();
-        } else {
-            self.is_connected = true;
-            return true;
-        }
-        self.clear_rx_buffer();
+    self.current_buffer_index == REMOTE_BUFFER_SIZE
+}
+
+pub fn parse_frame(& mut self) -> Result<(), RemoteReadError> {
+    if self.current_buffer_index < REMOTE_BUFFER_SIZE {
+        return Err(RemoteReadError::InvalidData);
     }
-    
-    false
+
+    if self.parse_read_buffer().is_err() {
+        defmt::println!("Failed to parse remote buffer");
+        self.reset();
+        return Err(RemoteReadError::InvalidData);
+    } else {
+        self.is_connected = true;
+    }
+    self.clear_rx_buffer();
+
+    Ok(())
 }
 
 pub fn get_left_switch(&self) -> Option<SwitchPosition> {

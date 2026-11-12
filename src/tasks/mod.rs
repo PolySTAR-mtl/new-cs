@@ -72,9 +72,15 @@ mod app {
     #[task(
         binds = UART5,
         priority = 2,
+        shared = [
+            remote
+        ],
+        local = [
+            uart5_rx,
+        ]
     )]
-    fn interrupt_uart5(cx: interrupt_uart5::Context) -> () {
-        super::input::task_uart5_interrupt(cx);
+    fn interrupt_uart5(mut cx: interrupt_uart5::Context) -> () {
+        super::input::task_uart5_interrupt(&mut cx);
     }
 
     #[task(
@@ -83,9 +89,6 @@ mod app {
             remote,
             input_map
         ],
-        local = [
-            uart5_rx,
-        ]
     )]
     async fn handle_remote(mut cx: handle_remote::Context) -> () {
         super::input::task_handle_remote(&mut cx).await;

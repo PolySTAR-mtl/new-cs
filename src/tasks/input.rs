@@ -13,31 +13,23 @@ use super::{
     Mono,
 };
 
-pub fn task_uart5_interrupt(_cx: interrupt_uart5::Context) -> () {
-    match handle_remote::spawn() {
-        Ok(_) => {
-            defmt::info!("handle_remote spawned.")
-        },
-        Err(_e) => {
-            defmt::warn!("handle_remote failed to spawn.");
-        }
-    }
-}
-
-pub async fn task_handle_remote(cx: &mut handle_remote::Context<'_>) -> () {
+pub fn task_uart5_interrupt(cx: &mut interrupt_uart5::Context) -> () {
     loop {
         let result = cx.local.uart5_rx.read();
         match result {
             Ok(byte) => {
-                cx.shared.remote.lock(|remote| {
-                    let now = Mono::now();
-                    let is_frame_full = remote.read(byte, now);
-                    if is_frame_full {
-                        cx.shared.input_map.lock(|input_map| {
-                            input_map.update(remote, now);
-                        });
-                    }
+                let now = Mono::now();
+                
+                let is_frame_ready = cx.shared.remote.lock(|remote| {
+                    remote.read(byte, now)
                 });
+
+                if is_frame_ready {
+                    match handle_remote::spawn() {
+                        Ok(_) => defmt::info!("Handle remote spawned."),
+                        Err(_) => defmt::warn!("Handle remote failed to spawn"),
+                    }
+                }
             },
 
             Err(Error::WouldBlock) => break,
@@ -48,6 +40,17 @@ pub async fn task_handle_remote(cx: &mut handle_remote::Context<'_>) -> () {
             },
         }
     }
+}
+
+pub async fn task_handle_remote(cx: &mut handle_remote::Context<'_>) -> () {
+    cx.shared.remote.lock(|remote| {
+        let now = Mono::now();
+        if remote.parse_frame().is_ok() {
+            cx.shared.input_map.lock(|input_map| {
+                input_map.update(remote, now);
+            });
+        }
+    });
 }
 
 pub async fn task_input_watchdog(cx: &mut input_watchdog::Context<'_>) -> ! {
