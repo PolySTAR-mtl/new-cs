@@ -36,6 +36,7 @@ rtic-monotonics = {
         "cortex-m-systick"
     ]
 }
+rtic-sync = "1.6.1"
 stm32h7xx-hal = { 
     version = "0.16.0", 
     features = [

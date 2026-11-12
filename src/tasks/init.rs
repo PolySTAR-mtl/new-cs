@@ -12,6 +12,7 @@ use crate::{
     drivers::remote::Remote,
     input::input_map::InputMap,
     tasks::app::input_watchdog,
+    tasks::app::handle_remote,
 };
 
 use super::app::{
@@ -26,7 +27,7 @@ pub struct Hardware {
 
 pub struct Context {
     pub hardware: Hardware,
-    pub input_map: InputMap
+    pub input_map: InputMap,
 }
 
 fn configure_hardware(device: pac::Peripherals) -> Hardware {
@@ -96,6 +97,10 @@ pub fn task_init(cx: init::Context) -> Context{
 
     input_watchdog::spawn()
         .expect("Failed to spawn watchdog");
+
+
+    handle_remote::spawn()
+        .expect("Failed to spawn handle remote.");
 
     Context {
         hardware,

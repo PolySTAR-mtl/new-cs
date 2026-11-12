@@ -18,17 +18,8 @@ pub fn task_uart5_interrupt(cx: &mut interrupt_uart5::Context) -> () {
         let result = cx.local.uart5_rx.read();
         match result {
             Ok(byte) => {
-                let now = Mono::now();
-                
-                let is_frame_ready = cx.shared.remote.lock(|remote| {
-                    remote.read(byte, now)
-                });
-
-                if is_frame_ready {
-                    match handle_remote::spawn() {
-                        Ok(_) => defmt::info!("Handle remote spawned."),
-                        Err(_) => defmt::warn!("Handle remote failed to spawn"),
-                    }
+                if let Err(_error) = cx.local.uart5_sender.try_send(byte) {
+                    defmt::warn!("UART RX channel full");
                 }
             },
 
@@ -42,15 +33,35 @@ pub fn task_uart5_interrupt(cx: &mut interrupt_uart5::Context) -> () {
     }
 }
 
-pub async fn task_handle_remote(cx: &mut handle_remote::Context<'_>) -> () {
-    cx.shared.remote.lock(|remote| {
-        let now = Mono::now();
-        if remote.parse_frame().is_ok() {
-            cx.shared.input_map.lock(|input_map| {
-                input_map.update(remote, now);
-            });
+pub async fn task_handle_remote(cx: &mut handle_remote::Context<'_>) -> ! {
+    loop {
+        let result = cx.local.uart5_receiver.recv().await;
+
+        match result {
+            Ok(byte) => {
+                let now = Mono::now();
+
+                let is_frame_ready = cx.shared.remote.lock(|remote| {
+                    remote.read(byte, now)
+                });
+
+                if !is_frame_ready {
+                    continue;
+                }
+
+                cx.shared.remote.lock(|remote| {
+                    let now = Mono::now();
+                    if remote.parse_frame().is_ok() {
+                        cx.shared.input_map.lock(|input_map| {
+                            input_map.update(remote, now);
+                        });
+                    }
+                });
+            },
+
+            Err(_) => continue,
         }
-    });
+    }
 }
 
 pub async fn task_input_watchdog(cx: &mut input_watchdog::Context<'_>) -> ! {

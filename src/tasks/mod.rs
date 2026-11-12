@@ -7,6 +7,7 @@ mod control;
 mod init;
 mod input;
 mod idle;
+
 systick_monotonic!(Mono, SYSTICK_FREQUENCY_HZ);
 
 defmt::timestamp!("{=u32}", {
@@ -30,6 +31,9 @@ mod app {
         drivers::remote::Remote,
         input::input_map::InputMap,
     };
+    use rtic_sync::{channel::*, make_channel};
+
+    const UART5_CHANNEL_CAPACITY: usize = 128;
 
     #[shared]
     struct Shared {
@@ -46,12 +50,16 @@ mod app {
         // Example: timer: Timer<pac::TIM2>,
         // Add subsystems states (data, speed, position, etc.)
         // Add powermanagement states (battery, power supply, etc.)
-        uart5_rx: Rx<pac::UART5>, // Remote uart rx buffer
+        uart5_rx: Rx<pac::UART5>, // Remote uart rx buffer,
+        uart5_sender: Sender<'static, u8, UART5_CHANNEL_CAPACITY>,
+        uart5_receiver: Receiver<'static, u8, UART5_CHANNEL_CAPACITY>
     }
 
     #[init]
     fn init(cx: init::Context) -> (Shared, Local) {
         let context = super::init::task_init(cx);
+
+        let (uart5_sender, uart5_receiver) = make_channel!(u8, UART5_CHANNEL_CAPACITY);
 
         (
             Shared {
@@ -60,6 +68,8 @@ mod app {
             }, 
             Local {
                 uart5_rx: context.hardware.uart5_rx,
+                uart5_receiver,
+                uart5_sender
             },
         )
     }
@@ -72,11 +82,9 @@ mod app {
     #[task(
         binds = UART5,
         priority = 2,
-        shared = [
-            remote
-        ],
         local = [
             uart5_rx,
+            uart5_sender
         ]
     )]
     fn interrupt_uart5(mut cx: interrupt_uart5::Context) -> () {
@@ -87,7 +95,10 @@ mod app {
         priority = 2,
         shared = [
             remote,
-            input_map
+            input_map,
+        ],
+        local = [
+            uart5_receiver,
         ],
     )]
     async fn handle_remote(mut cx: handle_remote::Context) -> () {
