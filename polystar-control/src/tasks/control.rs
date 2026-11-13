@@ -1,4 +1,3 @@
-use rtic::Mutex;
 use rtic_monotonics::{
     Monotonic,
     fugit::ExtU32,
@@ -11,7 +10,7 @@ use super::{
     Mono,
 };
 
-pub async fn task_control(cx: &mut control::Context<'_>) -> ! {
+pub async fn task_control(_cx: &mut control::Context<'_>) -> ! {
     loop {
         // delay
         const DELAY_MS: u32 = 10;

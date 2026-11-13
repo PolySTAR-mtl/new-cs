@@ -279,8 +279,8 @@ fn byte_to_switch_state(value: u32) -> Option<SwitchPosition> {
     match value {
         0 => None,
         1 => Some(SwitchPosition::Up),
-        2 => Some(SwitchPosition::Middle),
-        3 => Some(SwitchPosition::Down),
+        2 => Some(SwitchPosition::Down),
+        3 => Some(SwitchPosition::Middle),
         _ => None,
     }
 }

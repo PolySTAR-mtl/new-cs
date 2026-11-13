@@ -1,6 +1,6 @@
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SwitchPosition {
-    Up,
+    Up = 0,
     Middle,
     Down,
 }
