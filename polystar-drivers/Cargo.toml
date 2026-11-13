@@ -1,0 +1,26 @@
+[package]
+name = "polystar-drivers"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "polystar_drivers"
+path = "src/lib.rs"
+test = false
+doctest = false
+bench = false
+
+[dependencies]
+math = {
+    path = "../math"
+}
+
+input = {
+    path = "../input"
+}
+
+time = {
+    path = "../time"
+}
+
+defmt = "1.2.0"
