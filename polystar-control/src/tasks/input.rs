@@ -72,7 +72,7 @@ pub async fn task_input_watchdog(cx: &mut input_watchdog::Context<'_>) -> ! {
             let now = Mono::now();
             remote.check_timeout(now);
             if !remote.is_connected() {
-                defmt::println!("Controller was disconnected");
+                defmt::info!("Controller was disconnected");
             }
         });
     }

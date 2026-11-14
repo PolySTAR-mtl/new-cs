@@ -107,7 +107,7 @@ pub fn parse_frame(& mut self) -> Result<(), RemoteReadError> {
     }
 
     if self.parse_read_buffer().is_err() {
-        defmt::println!("Failed to parse remote buffer");
+        defmt::warn!("Failed to parse remote buffer");
         self.reset();
         return Err(RemoteReadError::InvalidData);
     } else {
@@ -373,14 +373,14 @@ fn parse_read_buffer(&mut self) -> Result<(), RemoteReadError> {
         AxisValue::new(right_y as f32 / ANALOG_MAX_VALUE as f32),
     );
 
-    defmt::info!("Right Joystick x:{}, y:{}", right_x, right_y);
+    defmt::debug!("Right Joystick x:{}, y:{}", right_x, right_y);
 
     self.left_joystick = Joystick::new(
         AxisValue::new(left_x as f32 / ANALOG_MAX_VALUE as f32),
         AxisValue::new(left_y as f32 / ANALOG_MAX_VALUE as f32),
     );
 
-    defmt::info!("Left Joystick x:{}, y:{}", left_x, left_y);
+    defmt::debug!("Left Joystick x:{}, y:{}", left_x, left_y);
 
     self.right_switch = right_switch;
     self.left_switch = left_switch;
@@ -396,8 +396,8 @@ fn parse_read_buffer(&mut self) -> Result<(), RemoteReadError> {
         0
     };
 
-    defmt::info!("Right switch: {}", switch_to_u32(right_switch));
-    defmt::info!("Left switch: {}", switch_to_u32(left_switch));
+    defmt::debug!("Right switch: {}", switch_to_u32(right_switch));
+    defmt::debug!("Left switch: {}", switch_to_u32(left_switch));
 
     self.mouse = Mouse {
         x: mouse_x,
@@ -407,7 +407,7 @@ fn parse_read_buffer(&mut self) -> Result<(), RemoteReadError> {
         right_button: mouse_right,
     };
 
-    defmt::info!("Mouse x: {}, y: {}, z: {}, left_button: {}, right_button: {}",
+    defmt::debug!("Mouse x: {}, y: {}, z: {}, left_button: {}, right_button: {}",
         mouse_x,
         mouse_y,
         mouse_z,
@@ -417,11 +417,11 @@ fn parse_read_buffer(&mut self) -> Result<(), RemoteReadError> {
 
     self.key_bits = key_bits;
 
-    defmt::info!("Key bits: {}", key_bits);
+    defmt::debug!("Key bits: {}", key_bits);
 
     self.wheel = AxisValue::new(wheel as f32 / ANALOG_MAX_VALUE as f32);
 
-    defmt::info!("Wheel: {}", wheel);
+    defmt::debug!("Wheel: {}", wheel);
 
     Ok(())
 }
