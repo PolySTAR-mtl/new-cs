@@ -125,3 +125,8 @@ pub enum ProtocolFieldIndex {
 
 pub const DR16_PROTOCOL: Protocol<PROTOCOL_FIELDS_COUNT> =
     Protocol::new(PROTOCOL_FIELDS, Bytes::new(FRAME_SIZE));
+
+const _: () = match DR16_PROTOCOL.validate() {
+    Ok(()) => (),
+    Err(_) => panic!("Invalid remote controller protocol."),
+};
