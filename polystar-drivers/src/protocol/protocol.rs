@@ -12,10 +12,15 @@ pub struct Protocol<const N: usize> {
 }
 
 impl<const N: usize> Protocol<N> {
-    pub const fn new(fields: &'static [Field; N], frame_size: Bytes) -> Self {
-        Self {
+    pub const fn new(fields: &'static [Field; N], frame_size: Bytes) -> Result<Self, ProtocolError> {
+        let protocol = Self {
             fields,
             frame_size
+        };
+
+        match protocol.validate() {
+            Ok(()) => Ok(protocol),
+            Err(error) => Err(error),
         }
     }
 
@@ -27,7 +32,7 @@ impl<const N: usize> Protocol<N> {
         self.frame_size
     }
 
-    pub const fn validate(&self) -> Result<(), ProtocolError> {
+    const fn validate(&self) -> Result<(), ProtocolError> {
         let frame_size = self.frame_size.value();
         let frame_bits = match frame_size.checked_mul(8) {
             Some(bits) if frame_size > 0 => bits,

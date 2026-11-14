@@ -13,7 +13,7 @@ const CENTER: i16 = 1024;
 const FRAME_SIZE: usize = 18; // bytes
 
 pub const PROTOCOL_FIELDS_COUNT: usize = 13;
-const PROTOCOL_FIELDS: &'static [Field; PROTOCOL_FIELDS_COUNT] = &[
+const PROTOCOL_FIELDS: [Field; PROTOCOL_FIELDS_COUNT] = [
     Field::new(
         "right_joystick_x",
         0,
@@ -124,9 +124,7 @@ pub enum ProtocolFieldIndex {
 }
 
 pub const DR16_PROTOCOL: Protocol<PROTOCOL_FIELDS_COUNT> =
-    Protocol::new(PROTOCOL_FIELDS, Bytes::new(FRAME_SIZE));
-
-const _: () = match DR16_PROTOCOL.validate() {
-    Ok(()) => (),
-    Err(_) => panic!("Invalid remote controller protocol."),
-};
+    match Protocol::new(&PROTOCOL_FIELDS, Bytes::new(FRAME_SIZE)) {
+        Ok(protocol) => protocol,
+        Err(_) => panic!("Invalid DR16 protocol."),
+    };
