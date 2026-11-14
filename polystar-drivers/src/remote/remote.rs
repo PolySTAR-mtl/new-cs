@@ -373,14 +373,14 @@ fn parse_read_buffer(&mut self) -> Result<(), RemoteReadError> {
         AxisValue::new(right_y as f32 / ANALOG_MAX_VALUE as f32),
     );
 
-    defmt::println!("Right Joystick x:{}, y:{}", right_x, right_y);
+    defmt::info!("Right Joystick x:{}, y:{}", right_x, right_y);
 
     self.left_joystick = Joystick::new(
         AxisValue::new(left_x as f32 / ANALOG_MAX_VALUE as f32),
         AxisValue::new(left_y as f32 / ANALOG_MAX_VALUE as f32),
     );
 
-    defmt::println!("Left Joystick x:{}, y:{}", left_x, left_y);
+    defmt::info!("Left Joystick x:{}, y:{}", left_x, left_y);
 
     self.right_switch = right_switch;
     self.left_switch = left_switch;
@@ -396,8 +396,8 @@ fn parse_read_buffer(&mut self) -> Result<(), RemoteReadError> {
         0
     };
 
-    defmt::println!("Right switch: {}", switch_to_u32(right_switch));
-    defmt::println!("Left switch: {}", switch_to_u32(left_switch));
+    defmt::info!("Right switch: {}", switch_to_u32(right_switch));
+    defmt::info!("Left switch: {}", switch_to_u32(left_switch));
 
     self.mouse = Mouse {
         x: mouse_x,
@@ -407,7 +407,7 @@ fn parse_read_buffer(&mut self) -> Result<(), RemoteReadError> {
         right_button: mouse_right,
     };
 
-    defmt::println!("Mouse x: {}, y: {}, z: {}, left_button: {}, right_button: {}",
+    defmt::info!("Mouse x: {}, y: {}, z: {}, left_button: {}, right_button: {}",
         mouse_x,
         mouse_y,
         mouse_z,
@@ -417,11 +417,11 @@ fn parse_read_buffer(&mut self) -> Result<(), RemoteReadError> {
 
     self.key_bits = key_bits;
 
-    defmt::println!("Key bits: {}", key_bits);
+    defmt::info!("Key bits: {}", key_bits);
 
     self.wheel = AxisValue::new(wheel as f32 / ANALOG_MAX_VALUE as f32);
 
-    defmt::println!("Wheel: {}", wheel);
+    defmt::info!("Wheel: {}", wheel);
 
     Ok(())
 }

@@ -29,8 +29,11 @@ impl ActionValue {
             },
 
             Self::DualAxis(value) => {
-                let normalized = Vector2::new(value.x().value(), value.y().value()).normalize();
-                *value = Vector2::new(AxisValue::new(*normalized.x()), AxisValue::new(*normalized.y()))
+                let vector2 = Vector2::new(value.x().value(), value.y().value());
+                if vector2.magnitude() > 1.0 {
+                    let normalized = vector2.normalize();
+                    *value = Vector2::new(AxisValue::new(*normalized.x()), AxisValue::new(*normalized.y()))
+                }
             },
             _ => {},
         };

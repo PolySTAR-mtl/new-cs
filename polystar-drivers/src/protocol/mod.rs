@@ -1,6 +1,9 @@
 mod encoding;
 pub use encoding::*;
 
+mod endianness;
+pub use endianness::*;
+
 mod field;
 pub use field::*;
 

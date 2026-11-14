@@ -1,4 +1,7 @@
-use super::Encoding;
+use super::{
+    Encoding,
+    Endianness,
+};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Field {
@@ -6,15 +9,17 @@ pub struct Field {
     offset: usize,
     size: usize,
     encoding: Encoding,
+    endianness: Endianness
 }
 
 impl Field {
-    pub const fn new(name: &'static str, offset: usize, size: usize, encoding: Encoding) -> Self {
+    pub const fn new(name: &'static str, offset: usize, size: usize, encoding: Encoding, endianness: Endianness) -> Self {
         Self {
             name,
             offset,
             size,
-            encoding
+            encoding,
+            endianness
         }
     }
 
@@ -32,5 +37,9 @@ impl Field {
 
     pub const fn get_encoding(&self) -> Encoding {
         self.encoding
+    }
+
+    pub const fn get_endianness(&self) -> Endianness {
+        self.endianness
     }
 }

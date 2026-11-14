@@ -1,9 +1,6 @@
-use crate::{
-    protocol::{
-        Encoding,
-        Protocol,
-    },
-};
+use crate::protocol::{
+        Encoding, Endianness, Protocol,
+    };
 
 use super::{
     DecodeError,
@@ -93,11 +90,13 @@ impl<const N: usize> Decoder<N> {
             let offset = field.get_offset_in_bits();
             let size = field.get_size_in_bits();
             let encoding = field.get_encoding();
+            let endianness = field.get_endianness();
 
             let raw = Self::extract_bits(
                 frame,
                 offset,
                 size,
+                endianness
             );
 
             let value = match encoding {
@@ -125,8 +124,7 @@ impl<const N: usize> Decoder<N> {
         Ok(decoded)
     }
 
-    /// Extract bits using little-endian bit ordering.
-    fn extract_bits(
+    fn extract_bits_little_endian(
         frame: &[u8],
         offset: usize,
         size: usize,
@@ -144,6 +142,41 @@ impl<const N: usize> Decoder<N> {
         }
 
         result
+    }
+
+    fn extract_bits_big_endian(
+        frame: &[u8],
+        offset: usize,
+        size: usize,
+    ) -> u64 {
+        let mut result = 0u64;
+
+        for i in 0..size {
+            let bit_position = offset + i;
+            let byte_index = bit_position / 8;
+            let bit_index =  7 - (bit_position % 8);
+
+            let bit = ((frame[byte_index] >> bit_index) & 1) as u64;
+
+            result |= bit << i;
+        }
+
+        result
+    }
+
+    fn extract_bits(
+        frame: &[u8],
+        offset: usize,
+        size: usize,
+        endianness: Endianness
+    ) -> u64 {
+        match endianness {
+            Endianness::Little =>
+                Self::extract_bits_little_endian(frame, offset, size),
+            
+            Endianness::Big => 
+                Self::extract_bits_big_endian(frame, offset, size),
+        }
     }
 
     /// Interpret an unsigned value as two's-complement signed.
