@@ -8,15 +8,7 @@ use super::{
     axis_value::AxisValue,
     input_state::InputState,
     input_value::InputValue,
-    switch_position::SwitchPosition,
-    input::{
-        Switch,
-        Input,
-        Key,
-        Button,
-        DualAxis,
-        Axis
-    },
+    input::Input,
     action::Action,
     binding::Binding,
     trigger::Trigger,

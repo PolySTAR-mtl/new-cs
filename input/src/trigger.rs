@@ -36,7 +36,7 @@ impl Trigger {
     pub fn evaluate(
         &self,
         inputs: &[InputState],
-        now: Instant,
+        _now: Instant,
     ) -> bool {
         // Evaluate trigger against input states.
         match *self {
